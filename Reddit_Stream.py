@@ -2,7 +2,6 @@ import datetime
 import os
 import sqlite3
 import sys
-from collections import deque
 from threading import Lock, Timer
 import time
 import pandas as pd
@@ -15,9 +14,9 @@ os.chdir(os.path.realpath(os.path.dirname(__file__)))
 analyzer = SentimentIntensityAnalyzer()
 
 
-reddit = praw.Reddit(client_id='.........',
-                     client_secret='.........', password='........',
-                     user_agent='testscript by /u/.....', username='.....')
+reddit = praw.Reddit(client_id='VUbRz-ybSQJFmQ',
+                     client_secret='8zRPhh2j8J9nXhgKSNX83FT820Q', password='shrey123',
+                     user_agent='testscript by /u/M-Groot', username='M-Groot')
 
 
 conn = sqlite3.connect('reddit.db', isolation_level=None,
@@ -42,7 +41,7 @@ class listener():
 
         #subreddit = self.subred()
         #track = self.topic()
-        subreddit = reddit.subreddit('all')
+        subreddit = reddit.subreddit('worldnews')
 
         for submis in subreddit.stream.submissions():
             try:
@@ -93,10 +92,14 @@ class listener():
         one_day = 86400 * 1000
         del_to = int(current_ms_time - (HM_DAYS_KEEP*one_day))
 
+        conn.execute("DELETE FROM threads WHERE time < {}".format(del_to))
+        conn.execute(
+            "DELETE FROM threads WHERE thread IS NULL OR trim(thread) = ''")
 
-        conn.execute("DELETE FROM sentiment WHERE unix < {}".format(del_to))
-        conn.execute("DELETE FROM threads WHERE thread IS NULL OR trim(thread) = ''")
-        conn.execute("VACUUM")
+        conn.isolation_level = None
+        conn.execute('VACUUM')
+        conn.isolation_level = ''
+
         conn.commit()
         conn.close()
 
@@ -108,6 +111,4 @@ while True:
         redditlistern.del_from_db()
     except Exception as e:
         print(str(e))
-        time.sleep(5)
 
-Timer(5, redditlistern).start()
