@@ -6,18 +6,29 @@ import os
 import sqlite3
 import plotly.graph_objs as go
 import pandas as pd
+import requests
 
-app = dash.Dash(__name__)
-app.title = 'Real-Time Reddit Monitor'
-conn = sqlite3.connect('reddit.db', check_same_thread=False)
+
+
+res = requests.get("https://nosnch.in/69450c30b4")
+
+
 
 external_css = [
-    "https://codepen.io/chriddyp/pen/bWLwgP.css","https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"]
-external_js = ["https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"]
+    "https://codepen.io/chriddyp/pen/bWLwgP.css", "https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"]
+external_js = [
+    "https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js","https://www.googletagmanager.com/gtag/js?id=G-ERELPFW4TP","window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-ERELPFW4TP');"]
 
 
 app = dash.Dash(__name__, external_stylesheets=external_css,
                 external_scripts=external_js)
+
+
+conn = sqlite3.connect('reddit.db', check_same_thread=False)
+
+app.title = 'Real-Time Reddit Monitor'
+
+
 app.layout = html.Div([
     html.H1(
         className='card bg-dark text-white',
@@ -26,7 +37,7 @@ app.layout = html.Div([
     html.Br(),
 
     html.H4(className='jumbotron jumbotron-fluid',
-            children=[html.H3("Select subreddit:(this selection is under development right now)"), html.H3("Current selection is r/all !"), html.Div(dcc.Dropdown(
+            children=[html.H3("Select subreddit:(this selection is under development right now)"), html.H3("Current selection is r/worldnews !"), html.Div(dcc.Dropdown(
         id='subreddit-dropdown',
         options=[
             {'label': 'all', 'value': 'all'},
@@ -66,7 +77,7 @@ app.layout = html.Div([
                                         html.Div(dcc.Graph(id='long-live-graph', animate=False), className='col-12 col-md-6'), ]),
 
     html.Br(),
-    html.Div(className='row', children=[html.Div(id="recent-threads-table", className='col-12 col-md-6'), html.Div(dcc.Graph(id='pie-live-graph', animate=False), className='col-12 col-md-6'),
+    html.Div(className='row', children=[html.Div(dcc.Graph(id='pie-live-graph', animate=False), className='col-12 col-md-6'), html.Div(id="recent-threads-table", className='col-12 col-md-6'),
         ]),
 
 
@@ -75,24 +86,21 @@ app.layout = html.Div([
         html.H3(className="card-body",children=[
             html.H3(className="card-title",children=["Your contribution is valuable!"]),
             html.H3(children=[
-                dcc.Link('Contribute on GitHub', href="https://github.com/ZeroPanda",
-                         className="btn btn-primary"), html.Span(" "),
+                dcc.Link('Contribute on GitHub', href="https://github.com/ZeroPanda/Reddit-Sentiment",
+                         className="btn btn-primary btn-lg"), html.Span(" "),
                 dcc.Link('Connect on LinkedIn', href="https://www.linkedin.com/in/shahshrey31/",
-                         className="btn btn-primary")
+                         className="btn btn-success btn-lg")
                 ])
         ])
     ], style={'padding-left': '100px', 'padding-right': '100px', 'textAlign': 'center', 'align-content': 'center', }),
 
 
 
-
-
-
-
-
     html.Hr(),
     html.Div(id="subreddit_term"),
     html.Div(id="search_term"),
+    html.Script(children=["https://www.googletagmanager.com/gtag/js?id=G-ERELPFW4TP","window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-ERELPFW4TP');"]),
+    
 ], style={'margin-top': '5px', 'margin-left': 10, 'margin-right': 10, 'align-content': 'center', 'padding': 10},)
 
 
@@ -113,7 +121,7 @@ def update_graph(n_intervals, searchterm):
     searchterm = searchterm.lower()
 
     conn.cursor()
-    df = pd.read_sql("SELECT * FROM threads WHERE thread LIKE ? ORDER BY time DESC LIMIT 1000",
+    df = pd.read_sql("SELECT * FROM threads WHERE thread LIKE ? ORDER BY time DESC LIMIT 50",
                      conn, params=('%' + searchterm + '%',))
     df.sort_values('time', inplace=True)
     df.dropna(inplace=True)
@@ -190,7 +198,7 @@ def update_pie_graph(n_intervals, searchterm):
 
 
 def generate_table(df, max_rows=10):
-    return html.H4(html.Table(className="table table-responsive table-striped table-bordered table-hover",
+    return html.H4(children=[html.H2(children=["Latest 10 feeds"], style={'textAlign':'center'}), html.Table(className="table table-responsive table-striped table-bordered table-hover",
                       children=[
                           html.Thead(
                               html.Tr(
@@ -207,8 +215,8 @@ def generate_table(df, max_rows=10):
                                       ]
                                   )
                                   for d in df.values.tolist()])
-                      ]
-                      ))
+                      ], style={"height": "400px", 'overflowY': 'auto'}
+                      )])
 
 
 @app.callback(Output('recent-threads-table', 'children'),
@@ -229,6 +237,7 @@ def update_recent_threads(searchterm, n_intervals):
     return generate_table(df, max_rows=10)
 
 
+
 server = app.server
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
