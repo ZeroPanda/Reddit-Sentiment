@@ -15,15 +15,13 @@ os.chdir(os.path.realpath(os.path.dirname(__file__)))
 analyzer = SentimentIntensityAnalyzer()
 
 
-
-reddit = praw.Reddit(client_id='*****-*******',
-                     client_secret='**************', password='***********',
-                     user_agent='testscript by /u/*******', username='**********')
-
+reddit = praw.Reddit(client_id='*******',
+                     client_secret='********', password='********',
+                     user_agent='testscript by /u/******', username='*******')
 
 
 class listener():
-    
+
     def topic(self, text=""):
         return text
 
@@ -45,8 +43,8 @@ class listener():
                 time = datetime.datetime.now()
                 values = (submission, vs, time)
 
-                conn = psycopg2.connect(host="******.*****.amazonaws.com", database="**********",
-                                        user="**********", password="****************************")
+                conn = psycopg2.connect(host="******.compute-1.amazonaws.com", database="*******",
+                                        user="*******", password="****")
                 cur = conn.cursor()
                 cur.execute(
                     'INSERT INTO threads (thread,sentiment,time) VALUES (%s,%s,%s)', values)
@@ -87,6 +85,10 @@ class listener():
         one_day = 86400 * 1000
         del_to = int(current_ms_time - (HM_DAYS_KEEP*one_day))
 
+        conn = psycopg2.connect(host="******.compute-1.amazonaws.com", database="*******",
+                                user="*******", password="****")
+        cur = conn.cursor()
+
         cur.execute("DELETE FROM threads WHERE time < {}".format(del_to))
         conn.commit()
         cur.execute(
@@ -99,15 +101,12 @@ class listener():
         conn.commit()
 
 
-conn = psycopg2.connect(host="******.*****.amazonaws.com", database="**********",
-                        user="**********", password="****************************")
+conn = psycopg2.connect(host="******.compute-1.amazonaws.com", database="*******",
+                        user="*******", password="****")
 cur = conn.cursor()
 cur.execute('''CREATE TABLE IF NOT EXISTS threads
              (id SERIAL PRIMARY KEY,thread text, sentiment real, time timestamp)''')
 conn.commit()
-
-
-
 
 
 while True:
@@ -119,6 +118,3 @@ while True:
         print(str(e))
 
 conn.close()
-
-
-

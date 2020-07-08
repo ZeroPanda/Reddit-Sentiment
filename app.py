@@ -13,15 +13,15 @@ import psycopg2
 external_css = [
     "https://codepen.io/chriddyp/pen/bWLwgP.css", "https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"]
 external_js = [
-    "https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js","https://www.googletagmanager.com/gtag/js?id=G-ERELPFW4TP","window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-ERELPFW4TP');"]
+    "https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js", "gajs.js"]
 
 
 app = dash.Dash(__name__, external_stylesheets=external_css,
                 external_scripts=external_js)
 
 
-#conn = sqlite3.connect('reddit.db', check_same_thread=False)
-conn = psycopg2.connect(host="******.*****.amazonaws.com",database="**********", user="**********", password="****************************")
+conn = psycopg2.connect(host="******.compute-1.amazonaws.com", database="*******",
+                        user="*******", password="****")
 
 app.title = 'Real-Time Reddit Monitor'
 
@@ -35,25 +35,25 @@ app.layout = html.Div([
 
     html.H4(className='jumbotron jumbotron-fluid',
             children=[html.H3("Select subreddit:(this selection is under development right now)"), html.H3("Current selection is r/worldnews !"), html.Div(dcc.Dropdown(
-        id='subreddit-dropdown',
-        options=[
-            {'label': 'all', 'value': 'all'},
-            {'label': 'worldnews', 'value': 'worldnews'},
-            {'label': 'AskReddit', 'value': 'AskReddit'},
-            {'label': 'Movies', 'value': 'Movies'},
-        ],
-        value='all',
-        disabled= False
-    ), style={'padding-left': '100px', 'padding-right': '100px',}), html.Br(), html.H3("Search for the term: (This is working!)"),
-    dcc.Input(
-        id="searchinput",
-        type="text",
-        placeholder="search type",
-        value='trump'
-    )], style={'margin-top': '5px', 'textAlign': 'center', 'align-content': 'center', }),
+                id='subreddit-dropdown',
+                options=[
+                    {'label': 'all', 'value': 'all'},
+                    {'label': 'worldnews', 'value': 'worldnews'},
+                    {'label': 'AskReddit', 'value': 'AskReddit'},
+                    {'label': 'Movies', 'value': 'Movies'},
+                ],
+                value='worldnews',
+                disabled=True
+            ), style={'padding-left': '200px', 'padding-right': '200px', }), html.Br(), html.H3("Search the term: (This is working!)"),
+                dcc.Input(
+                id="searchinput",
+                type="text",
+                placeholder="search here",
+                value='trump'
+            )], style={'margin-top': '5px', 'textAlign': 'center', 'align-content': 'center', }),
 
 
-    
+
 
     dcc.Interval(
         id='graph-update',
@@ -66,28 +66,29 @@ app.layout = html.Div([
         n_intervals=0),
 
     dcc.Interval(
-            id='recent-table-update',
-            interval=2 * 1000,
-            n_intervals=0),
+        id='recent-table-update',
+        interval=2 * 1000,
+        n_intervals=0),
 
     html.Div(className='row', children=[html.Div(dcc.Graph(id='live-graph', animate=False), className='col-12 col-md-6'),
                                         html.Div(dcc.Graph(id='long-live-graph', animate=False), className='col-12 col-md-6'), ]),
 
     html.Br(),
     html.Div(className='row', children=[html.Div(dcc.Graph(id='pie-live-graph', animate=False), className='col-12 col-md-6'), html.Div(id="recent-threads-table", className='col-12 col-md-6'),
-        ]),
+                                        ]),
 
 
     html.H2(className="card text-white bg-dark mb-3", children=[
-        html.H2(className="card-header", children=["Support Us"]), 
-        html.H3(className="card-body",children=[
-            html.H3(className="card-title",children=["Your contribution is valuable!"]),
+        html.H2(className="card-header", children=["Support Us"]),
+        html.H3(className="card-body", children=[
+            html.H3(className="card-title",
+                    children=["Your contribution is valuable!"]),
             html.H3(children=[
                 dcc.Link('Contribute on GitHub', href="https://github.com/ZeroPanda/Reddit-Sentiment",
                          className="btn btn-primary btn-lg"), html.Span(" "),
                 dcc.Link('Connect on LinkedIn', href="https://www.linkedin.com/in/shahshrey31/",
                          className="btn btn-success btn-lg")
-                ])
+            ])
         ])
     ], style={'padding-left': '100px', 'padding-right': '100px', 'textAlign': 'center', 'align-content': 'center', }),
 
@@ -96,8 +97,8 @@ app.layout = html.Div([
     html.Hr(),
     html.Div(id="subreddit_term"),
     html.Div(id="search_term"),
-    html.Script(children=["https://www.googletagmanager.com/gtag/js?id=G-ERELPFW4TP","window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-ERELPFW4TP');"]),
-    
+
+
 ], style={'margin-top': '5px', 'margin-left': 10, 'margin-right': 10, 'align-content': 'center', 'padding': 10},)
 
 
@@ -121,9 +122,10 @@ def update_graph(n_intervals, searchterm):
     df = pd.read_sql("SELECT * FROM threads WHERE thread LIKE %s ORDER BY time DESC LIMIT 50",
                      conn, params=('%' + searchterm + '%',))
     df.sort_values('time', inplace=True)
+    df['time'] = pd.to_datetime(df['time'])
     df.dropna(inplace=True)
 
-    X = df.time.values[-100:]
+    X = df['time'].tail(100)
     Y = df.sentiment.values[-100:]
 
     fig = go.Scatter(
@@ -132,13 +134,13 @@ def update_graph(n_intervals, searchterm):
         name='Scatter',
         line_shape='linear',
         mode='lines',
-        line=dict(width=5, color='indigo'),
+        line=dict(width=3.5, color='indigo'),
         fill='tozeroy', fillcolor='rgba(128, 255, 0,0.3)',
     )
 
-    return {'data': [fig], 'layout': go.Layout(xaxis=dict(range=[min(X,default=0), max(X,default=1)]),
+    return {'data': [fig], 'layout': go.Layout(xaxis=dict(range=[min(X, default=0), max(X, default=1)]),
                                                yaxis=dict(range=[-1, 1]),
-                                               title="The average sentiment for {} is {p:5.2f}!".format(searchterm, p=(sum(Y)/ len(Y)) if len(Y) != 0 else 0))}
+                                               title="The average sentiment for {} is {p:5.2f}!".format(searchterm, p=(sum(Y) / len(Y)) if len(Y) != 0 else 0))}
 
 
 @app.callback(
@@ -152,22 +154,24 @@ def update_long_graph(n_intervals, searchterm):
     df = pd.read_sql("SELECT * FROM threads WHERE thread LIKE %s ORDER BY time DESC",
                      conn, params=('%' + searchterm + '%',))
     df.sort_values('time', inplace=True)
-    df['sentiment_smoothed'] = df['sentiment'].rolling(int(len(df)/10)).mean()
+    df['time'] = pd.to_datetime(df['time'])
+    df['sentiment_smoothed'] = df['sentiment'].rolling(int(len(df)/20)).mean()
     df.dropna(inplace=True)
 
-    X = df.time.values[:]
+    X = df['time']
     Y = df.sentiment_smoothed.values[:]
 
     fig = go.Scatter(
         x=X,
         y=Y,
-        name='Scatter', line_shape= 'spline',
+        name='Scatter', line_shape='spline',
         fill='tozeroy', fillcolor='steelblue', mode='none',
     )
 
     return {'data': [fig], 'layout': go.Layout(xaxis=dict(range=[min(X, default=0), max(X, default=1)]),
-                                               yaxis=dict(range=[min(Y, default=0), max(Y, default=1)]),
-                                               title="The long-term average sentiment for {} is {p:5.2f} (10 moving average)!".format(searchterm, p=(sum(Y) / len(Y)) if len(Y) != 0 else 0))}
+                                               yaxis=dict(
+                                                   range=[min(Y, default=0), max(Y, default=1)]),
+                                               title="The long-term average sentiment for {} is {p:5.2f} (20 moving average)!".format(searchterm, p=(sum(Y) / len(Y)) if len(Y) != 0 else 0))}
 
 
 @app.callback(
@@ -175,12 +179,11 @@ def update_long_graph(n_intervals, searchterm):
     [dash.dependencies.Input('pie-graph-update', 'n_intervals'), Input(component_id='searchinput', component_property='value')])
 def update_pie_graph(n_intervals, searchterm):
 
-
     conn.cursor()
-    df = pd.read_sql("SELECT * FROM threads WHERE thread LIKE %s",conn, params=('%' + searchterm + '%',))
+    df = pd.read_sql("SELECT * FROM threads WHERE thread LIKE %s",
+                     conn, params=('%' + searchterm + '%',))
 
-
-    labels = ['Positive','Neutral', 'Negative']
+    labels = ['Positive', 'Neutral', 'Negative']
     values = [sum(n > 0 for n in df['sentiment']),
               sum(n == 0 for n in df['sentiment']), sum(n < 0 for n in df['sentiment'])]
     colors = ['mediumturquoise', 'gold',  'darkorange']
@@ -195,25 +198,25 @@ def update_pie_graph(n_intervals, searchterm):
 
 
 def generate_table(df, max_rows=10):
-    return html.H4(children=[html.H2(children=["Latest 10 feeds"], style={'textAlign':'center'}), html.Table(className="table table-responsive table-striped table-bordered table-hover",
-                      children=[
-                          html.Thead(
-                              html.Tr(
-                                  children=[
-                                      html.Th(col.title()) for col in df.columns.values]
-                              )
-                          ),
-                          html.Tbody(
-                              [
+    return html.H4(children=[html.H2(children=["Latest 10 feeds"], style={'textAlign': 'center'}), html.Table(className="table table-responsive table-striped table-bordered table-hover",
+                                                                                                              children=[
+                                                                                                                  html.Thead(
+                                                                                                                      html.Tr(
+                                                                                                                          children=[
+                                                                                                                              html.Th(col.title()) for col in df.columns.values]
+                                                                                                                      )
+                                                                                                                  ),
+                                                                                                                  html.Tbody(
+                                                                                                                      [
 
-                                  html.Tr(
-                                      children=[
-                                          html.Td(data) for data in d
-                                      ]
-                                  )
-                                  for d in df.values.tolist()])
-                      ], style={"height": "400px", 'overflowY': 'auto'}
-                      )])
+                                                                                                                          html.Tr(
+                                                                                                                              children=[
+                                                                                                                                  html.Td(data) for data in d
+                                                                                                                              ]
+                                                                                                                          )
+                                                                                                                          for d in df.values.tolist()])
+                                                                                                              ], style={"height": "400px", 'overflowY': 'auto'}
+                                                                                                              )])
 
 
 @app.callback(Output('recent-threads-table', 'children'),
@@ -226,13 +229,14 @@ def update_recent_threads(searchterm, n_intervals):
         df = pd.read_sql(
             "SELECT * FROM threads ORDER BY time DESC LIMIT 10", conn)
 
-    df['time'] = df['time'].str[:19]
-    df['Live Feed(first 300 characters)'] = df['thread'].str[:300]
-    #df = df.drop(['unix', 'id'], axis=1)
-    df = df[['time', 'Live Feed(first 300 characters)', 'sentiment']]
+    #df['Time'] = pd.to_datetime(df['time'])
+    df['Time'] = pd.to_datetime(df['time']).dt.strftime('%Y/%m/%d %H:%M:%S')
+    df.dropna(inplace=True)
+
+    df['Live Feed'] = df['thread'].str[:]
+    df = df[['Time', 'Live Feed', 'sentiment']]
 
     return generate_table(df, max_rows=10)
-
 
 
 server = app.server
