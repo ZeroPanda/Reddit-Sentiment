@@ -15,7 +15,7 @@ click==7.1.2
 colorama==0.4.3
 config==0.5.0.post0
 Counter==1.0.0
-cryptography==2.9.2
+cryptography==3.2
 dash==1.0.0
 dash-core-components==1.0.0
 dash-html-components==1.0.0
