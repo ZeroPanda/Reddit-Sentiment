@@ -58,7 +58,7 @@ praw==7.1.0
 prawcore==1.4.0
 psycopg2==2.8.5
 public==2019.4.13
-py==1.9.0
+py==1.10.0
 pycodestyle==2.6.0
 pycparser==2.20
 pylint==2.5.3
