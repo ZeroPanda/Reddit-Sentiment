@@ -89,7 +89,7 @@ tqdm==4.46.1
 typed-ast==1.4.1
 Unidecode==1.1.1
 update-checker==0.17
-urllib3==1.25.9
+urllib3==1.26.5
 vaderSentiment==3.3.2
 virtualenv==20.0.25
 virtualenv-clone==0.5.4
